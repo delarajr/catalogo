@@ -1,0 +1,27 @@
+# --- RECEBER DADOS DO MINI APP ---
+@bot.message_handler(content_types=['web_app_data'])
+def handle_web_app_data(message):
+    import json
+    
+    # Extrai os dados enviados pelo JavaScript (tg.sendData)
+    data = json.loads(message.web_app_data.data)
+    prod_id = data.get("prod_id")
+    
+    produto = PRODUTOS.get(prod_id)
+    
+    if produto:
+        valor = produto["preco"]
+        desc = produto["nome"]
+        
+        bot.send_message(message.chat.id, f"🎬 Ótima escolha! Você selecionou: **{desc}**.\n🔄 Gerando seu PIX...")
+        
+        pix = gerar_pix(valor, desc)
+        if pix:
+            payment_id = pix["id"]
+            copia_cola = pix["qrcode_copia_cola"]
+            
+            bot.send_message(message.chat.id, f"🔑 **PIX Copia e Cola:**\n\n`{copia_cola}`", parse_mode="Markdown")
+            
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton("✅ Já paguei! Verificar", callback_data=f"check_{payment_id}_{prod_id}"))
+            bot.send_message(message.chat.id, "Após pagar, clique no botão abaixo:", reply_markup=markup)
